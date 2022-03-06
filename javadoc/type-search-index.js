@@ -1,0 +1,1 @@
+typeSearchIndex = [{"p":"src","l":"Activitat"},{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"src","l":"AppGimnas"},{"p":"src","l":"Client"},{"p":"src","l":"CompteBancari"},{"p":"src","l":"ConnexioBD"},{"p":"src","l":"Correu"},{"p":"src","l":"dbConexion"},{"p":"src","l":"Dni"},{"p":"src","l":"Gimnas"},{"p":"src","l":"Telefon"}];updateSearchResults();
