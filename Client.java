@@ -32,9 +32,6 @@ public class Client {
     private String condicio;
     private int edat;
     private int reserves;
-
-
-    static ConnexioBD con = new ConnexioBD();
     
     public void consultarClient() throws SQLException {
         Scanner teclat = new Scanner(System.in);
@@ -50,10 +47,9 @@ public class Client {
     }
 
     public Client consultarClientBD(String dni) throws SQLException {
-        
-        con.connexioBD();
         String consulta = "SELECT * FROM client WHERE dni = ?";
-        PreparedStatement sentencia = con.connexioBD.prepareStatement(consulta);
+        Connection c = dbConexion.getConnection();
+        PreparedStatement sentencia = c.prepareStatement(consulta);
 
         sentencia.setString(1, dni);
 
@@ -203,7 +199,8 @@ public class Client {
 
         try {
             String consulta = "INSERT INTO client VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement sentencia = con.connexioBD.prepareStatement(consulta);
+            Connection c = dbConexion.getConnection();
+            PreparedStatement sentencia = c.prepareStatement(consulta);
             sentencia.setString(1, this.dni.getDni());
             sentencia.setString(2, this.getNom());
             sentencia.setString(3, this.getCognom());
@@ -220,11 +217,11 @@ public class Client {
             sentencia.executeUpdate();
 
             String consulta2 = "INSERT INTO alta VALUES()";
-            PreparedStatement sentencia2 = con.connexioBD.prepareStatement(consulta2);
+            PreparedStatement sentencia2 = c.prepareStatement(consulta2);
             sentencia2.executeUpdate();
 
             String consulta3 = "SELECT * FROM alta order by id desc limit 1";
-            PreparedStatement sentencia3 = con.connexioBD.prepareStatement(consulta3);
+            PreparedStatement sentencia3 = c.prepareStatement(consulta3);
             sentencia3.executeQuery();
 
             ResultSet rs = sentencia3.executeQuery();
@@ -235,7 +232,7 @@ public class Client {
             }
 
             String consulta4 = "INSERT INTO es_dona(data_alta, dni, id) VALUES(?, ?, ?)";
-            PreparedStatement sentencia4 = con.connexioBD.prepareStatement(consulta4);
+            PreparedStatement sentencia4 = c.prepareStatement(consulta4);
             LocalDate lt = LocalDate.now();
 
             sentencia4.setDate(1, Date.valueOf(lt));
@@ -291,8 +288,7 @@ public class Client {
 
     public ArrayList<Client> ordenarPerReserves() throws SQLException {
         ArrayList<Client> clients = new ArrayList<>();
-        con.connexioBD();
-        String sql = "SELECT client.*,count(reserva_colectiva.dni) + (SELECT count(reserva_lliure.dni) FROM reserva_lliure WHERE reserva_lliure.dni = client.dni)as Reserves FROM reserva_colectiva, client WHERE reserva_colectiva.dni = client.dni GROUP BY reserva_colectiva.dni  ORDER BY count(reserva_colectiva.dni) + (SELECT count(reserva_lliure.dni) FROM reserva_lliure WHERE reserva_lliure.dni = client.dni) desc";
+        String sql = "SELECT b.*, sum(Reserves) AS Reserves  FROM (SELECT dni, count(*) as Reserves FROM reserva_lliure group by dni UNION all SELECT dni, count(*) as Reserves FROM reserva_colectiva group by dni) a RIGHT JOIN client b ON a.dni = b.dni group by b.dni order by Reserves desc";
         Connection c = dbConexion.getConnection();
         PreparedStatement sentencia = c.prepareStatement(sql);
         sentencia.executeQuery();
@@ -322,23 +318,33 @@ public class Client {
         byte[] messageDigest = md.digest(password.getBytes());
         BigInteger bigInt = new BigInteger(1, messageDigest);
         return bigInt.toString(16);
-    
     }
 
     public void baixaClient() throws SQLException {
         Scanner teclat = new Scanner(System.in);
-        System.out.print("Introdueix el DNI del client que vols donar de baixa: ");
-        String dni = teclat.next();
-        LocalDate lt = LocalDate.now();
+        Dni dniObj = new Dni();
+        String dni;
+        do {
+            System.out.print("Introdueix el DNI del client que vols donar de baixa: ");
+            dni = teclat.next();
+            
+        } while (!dniObj.validarDNI(dni)); 
+        dniObj.setDni(dni);
+        setDni(dniObj);
+
+        if (consultarClientBD(dniObj.getDni()) == null) {
+            System.out.println("Aquest DNI no està donat d'alta");
+        } else {
 
         String consulta = "UPDATE es_dona SET data_baixa = ? WHERE dni = ?";
         Connection c = dbConexion.getConnection();
         PreparedStatement sentencia = c.prepareStatement(consulta);
-        sentencia.setDate(1, Date.valueOf(lt));
+        sentencia.setDate(1, Date.valueOf(LocalDate.now()));
         sentencia.setString(2, dni);
 
         sentencia.executeUpdate();
         System.out.println("El client s'ha donat de baixa correctament.");
+        }
     }
 
     public void modificarClient() throws NoSuchAlgorithmException, SQLException {
@@ -416,7 +422,8 @@ public class Client {
     private void modificarClientBD() {
         try {
             String consulta = "UPDATE client SET telefon = ?, email = ?, sexe = ?, usuari = ?, contrasenya = ?, comunicacio_comercial = ? WHERE dni = ?";
-            PreparedStatement sentencia = con.connexioBD.prepareStatement(consulta);
+            Connection c = dbConexion.getConnection();
+            PreparedStatement sentencia = c.prepareStatement(consulta);
             sentencia.setString(1, this.telefon.getTelf());
             sentencia.setString(2, this.correu.getCorreu());
             sentencia.setString(3, String.valueOf(this.getSexe()));
@@ -528,14 +535,6 @@ public class Client {
 
     public void setCondicio(String condicio) {
         this.condicio = condicio;
-    }
-
-    public static ConnexioBD getCon() {
-        return con;
-    }
-
-    public static void setCon(ConnexioBD con) {
-        Client.con = con;
     }
 
     public int getEdat() {

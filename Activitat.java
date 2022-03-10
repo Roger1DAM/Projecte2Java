@@ -13,7 +13,7 @@ public class Activitat {
 
     public ArrayList<Activitat> visualitzarActivitats() throws SQLException {
         ArrayList<Activitat> activitats = new ArrayList<>();
-        String sql = "SELECT a.*, count(b.id) AS Reserves, (count(b.id)/(count(b.id) + d.aforament_max) * 100) AS Percentatge FROM activitat a, reserva_lliure b, es_fa c, sala d WHERE a.id = b.id_act AND c.id = a.id AND c.num = d.num group by a.id;";
+        String sql = "SELECT b.*, sum(Reserves) AS Reserves, (count(b.id)/(count(b.id) + d.aforament_max) * 100) AS Percentatge FROM (SELECT id_act, count(*) as Reserves FROM reserva_lliure group by dni UNION all SELECT id_act, count(*) as Reserves FROM reserva_colectiva group by id_act) a RIGHT JOIN activitat b ON a.id_act = b.id, es_fa c, sala d WHERE c.id = b.id AND c.num = d.num group by b.id order by Reserves desc";
         Connection c = dbConexion.getConnection();
         PreparedStatement sentencia = c.prepareStatement(sql);
         sentencia.executeQuery();
